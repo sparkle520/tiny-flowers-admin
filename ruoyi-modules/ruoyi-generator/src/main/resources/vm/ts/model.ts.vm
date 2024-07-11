@@ -1,0 +1,62 @@
+#if($isUseQueryMethod)
+import type { BaseEntity } from '@/api/model/resultModel';
+#end
+
+#if($isUseQuery && ($isUseQueryMethod || $isUseExportMethod))
+/**
+ * ${functionName}查询对象
+ */
+export interface ${ClassName}Query extends BaseEntity {
+#foreach ($column in $columns)
+#if($column.isQuery() && $column.queryType != "BETWEEN")
+  /** $column.columnComment */
+  $column.javaField?: ${GenUtil.javaTypeToTypescript($column.javaType)};
+#end
+#end
+}
+#end
+#if($isUseBO)
+/**
+ * ${functionName}业务对象
+ */
+export interface ${ClassName}Form {
+#foreach ($column in $columns)
+#if(($column.isPk() || $column.isInsert() || $column.isEdit()))
+  /** $column.columnComment */
+  $column.javaField?: ${GenUtil.javaTypeToTypescript($column.javaType)};
+#end
+#end
+#if($table.isTree() && !$isUseVO)
+  /** 子${functionName} */
+  children?: ${ClassName}Vo[];
+#end
+}
+#end
+#if(!$isUseBO || (!$isUseQuery && !$isUseBO) || !$isUseVO)
+/**
+ * ${functionName}对象 ${tableName}
+ */
+export interface ${ClassName}#if($isUseQueryMethod && !$isUseQuery) extends BaseEntity#end {
+#foreach ($column in $columns)
+  /** $column.columnComment */
+  $column.javaField?: ${GenUtil.javaTypeToTypescript($column.javaType)};
+#end
+}
+#end
+#if($isUseVO)
+/**
+ * ${functionName}视图对象
+ */
+export interface ${ClassName}Vo {
+#foreach ($column in $columns)
+#if($column.isList() || $column.isPk() || $column.isEdit() || $column.isInsert() || $column.isDetail())
+  /** $column.columnComment */
+  $column.javaField?: ${GenUtil.javaTypeToTypescript($column.javaType)};
+#end
+#end
+#if($table.isTree())
+  /** 子${functionName} */
+  children?: ${ClassName}Vo[];
+#end
+}
+#end

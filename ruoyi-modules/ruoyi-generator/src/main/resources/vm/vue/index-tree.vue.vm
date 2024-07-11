@@ -1,0 +1,790 @@
+#set($modal = '$modal')
+#set($event = '$event')
+#set($addOrUpdate = $isUseAddMethod || $isUseEditMethod)
+<template>
+  <t-card>
+#if($isUseQueryMethod)
+    <t-space direction="vertical" style="width: 100%">
+      <t-form v-show="showSearch" ref="queryRef" :data="queryParams" layout="inline" reset-type="initial" label-width="calc(4em + 12px)">
+#foreach($column in $columns)
+#if($column.isQuery())
+#set($dictType=$column.dictType)
+#set($AttrName=$column.javaField.substring(0,1).toUpperCase() + ${column.javaField.substring(1)})
+#set($parentheseIndex=$column.columnComment.indexOf("（"))
+#if($parentheseIndex != -1)
+#set($comment=$column.columnComment.substring(0, $parentheseIndex))
+#else
+#set($comment=$column.columnComment)
+#end
+#if($column.htmlType == "input" || $column.htmlType == "input-number" || $column.htmlType == "textarea")
+        <t-form-item label="${comment}" name="${column.javaField}">
+          <t-input v-model="queryParams.${column.javaField}" placeholder="请输入${comment}" clearable @enter="handleQuery" />
+        </t-form-item>
+#elseif(($column.htmlType == "select" || $column.htmlType == "radio" || $column.htmlType == "checkbox") && "" != $dictType)
+        <t-form-item label="${comment}" name="${column.javaField}">
+          #if($column.queryType == "IN")
+          <t-select
+            :model-value="queryParams.${column.javaField}?.split(',')"
+            placeholder="请选择${comment}"
+            multiple
+            clearable
+            :min-collapsed-num="1"
+            :tag-props="{ theme: 'primary', variant: 'light' }"
+            @update:model-value="queryParams.${column.javaField} = ${event}.filter((item: any) => item).join(',')"
+          >
+          #else
+          <t-select v-model="queryParams.${column.javaField}" placeholder="请选择${comment}" clearable>
+          #end
+            <t-option
+              v-for="dict in ${dictType}"
+              :key="dict.value"
+              :label="dict.label"
+              :value="dict.value"
+            />
+          </t-select>
+        </t-form-item>
+#elseif(($column.htmlType == "select" || $column.htmlType == "radio" || $column.htmlType == "checkbox") && $dictType)
+        <t-form-item label="${comment}" name="${column.javaField}">
+          <t-select v-model="queryParams.${column.javaField}" placeholder="请选择${comment}" clearable>
+            <t-option label="请选择字典生成" value="" />
+          </t-select>
+        </t-form-item>
+#elseif($column.htmlType == "datetime" && $column.queryType != "BETWEEN")
+        <t-form-item label="${comment}" name="${column.javaField}">
+          <t-date-picker
+            v-model="queryParams.${column.javaField}"
+            allow-input
+            clearable
+            placeholder="请选择${comment}"
+          />
+        </t-form-item>
+#elseif($column.htmlType == "datetime" && $column.queryType == "BETWEEN")
+        <t-form-item label="${comment}">
+          <t-date-range-picker
+            v-model="dateRange${AttrName}"
+            style="width: 240px"
+            allow-input
+            clearable
+            separator="-"
+            :placeholder="['开始日期', '结束日期']"
+          />
+        </t-form-item>
+#end
+#end
+#end
+        <t-form-item label-width="0px">
+          <t-button theme="primary" @click="handleQuery">
+            <template #icon> <search-icon /></template>
+            搜索
+          </t-button>
+          <t-button theme="default" @click="resetQuery">
+            <template #icon> <refresh-icon /></template>
+            重置
+          </t-button>
+        </t-form-item>
+      </t-form>
+
+      <t-enhanced-table
+        ref="tableRef"
+        v-model:column-controller-visible="columnControllerVisible"
+        v-model:expandedTreeNodes="expandedTreeNodes"
+        hover
+        :loading="loading"
+        :data="${businessName}List"
+        row-key="${treeCode}"
+        :columns="columns"
+        :column-controller="{
+          hideTriggerButton: true,
+        }"
+        :tree="{ childrenKey: 'children', expandTreeNodeOnClick: true }"
+        #if($hasSorting)
+        :sort="sort"
+        show-sort-column-bg-color
+        @sort-change="handleSortChange"
+        #end
+      >
+        <template #topContent>
+          <t-row>
+            <t-col flex="auto">
+#if($isUseAddMethod)
+              <t-button v-hasPermi="['${moduleName}:${businessName}:add']" theme="primary" @click="handleAdd()">
+                <template #icon> <add-icon /></template>
+                新增
+              </t-button>
+#end
+              <t-button theme="default" variant="outline" @click="toggleExpandAll">
+                <template #icon> <unfold-less-icon v-if="isExpand" /> <unfold-more-icon v-else /> </template>
+                全部{{ isExpand ? '折叠' : '展开' }}
+              </t-button>
+#if($isUseExportMethod)
+              <t-button v-hasPermi="['${moduleName}:${businessName}:export']" theme="default" variant="outline" @click="handleExport">
+                <template #icon> <download-icon /> </template>
+                导出
+              </t-button>
+#end
+            </t-col>
+            <t-col flex="none">
+              <t-button theme="default" shape="square" variant="outline" @click="showSearch = !showSearch">
+                <template #icon> <search-icon /> </template>
+              </t-button>
+              <t-button theme="default" variant="outline" @click="columnControllerVisible = true">
+                <template #icon> <setting-icon /> </template>
+                列配置
+              </t-button>
+            </t-col>
+          </t-row>
+        </template>
+#foreach($column in $columns)
+#set($javaField=$column.javaField)
+#set($parentheseIndex=$column.columnComment.indexOf("（"))
+#if($parentheseIndex != -1)
+#set($comment=$column.columnComment.substring(0, $parentheseIndex))
+#else
+#set($comment=$column.columnComment)
+#end
+#if($column.isList() && $column.htmlType == "imageUpload")
+        <template #${javaField}="{ row }">
+          <image-preview :src="row.${javaField}" :width="60" :height="60" />
+        </template>
+#elseif($column.isList() && $column.dictType && "" != $column.dictType)
+        <template #${javaField}="{ row }">
+          <dict-tag :options="${column.dictType}" :value="row.${javaField}" />
+        </template>
+#end
+#end
+#if($isUseAddMethod || $isUseDetailMethod || $isUseEditMethod || $isUseRemoveMethod)
+        <template #operation="{ row }">
+          <t-space :size="8" break-line>
+#if($isUseDetailMethod)
+            <t-link v-hasPermi="['${moduleName}:${businessName}:query']" theme="primary" hover="color" @click.stop="handleDetail(row)">
+              <browse-icon />详情
+            </t-link>
+#end
+#if($isUseEditMethod)
+            <t-link v-hasPermi="['${moduleName}:${businessName}:edit']" theme="primary" hover="color" @click.stop="handleUpdate(row)">
+              <edit-icon />修改
+            </t-link>
+#end
+#if($isUseAddMethod)
+            <t-link v-hasPermi="['${moduleName}:${businessName}:add']" theme="primary" hover="color" @click.stop="handleAdd(row)">
+              <add-icon />新增
+            </t-link>
+#end
+#if($isUseRemoveMethod)
+            <t-link v-hasPermi="['${moduleName}:${businessName}:remove']" theme="danger" hover="color" @click.stop="handleDelete(row)">
+              <delete-icon />删除
+            </t-link>
+#end
+          </t-space>
+        </template>
+#end
+      </t-enhanced-table>
+    </t-space>
+#end
+#if($addOrUpdate)
+
+    <!-- 添加或修改${functionName}对话框 -->
+    <t-dialog
+      v-model:visible="open"
+      :header="title"
+      destroy-on-close
+      :close-on-overlay-click="false"
+      width="500px"
+      attach="body"
+      :confirm-btn="{
+        loading: buttonLoading,
+      }"
+      @confirm="${businessName}Ref.submit()"
+    >
+      <t-loading :loading="buttonLoading" size="small">
+        <t-form
+          ref="${businessName}Ref"
+          :data="form"
+          :rules="rules"
+          label-align="right"
+          label-width="calc(5em + 41px)"
+          scroll-to-first-error="smooth"
+          @submit="submitForm"
+        >
+#foreach($column in $columns)
+#set($field=$column.javaField)
+#if(($column.isInsert() || $column.isEdit()) && !$column.isPk())
+#set($parentheseIndex=$column.columnComment.indexOf("（"))
+#if($parentheseIndex != -1)
+#set($comment=$column.columnComment.substring(0, $parentheseIndex))
+#else
+#set($comment=$column.columnComment)
+#end
+#set($dictType=$column.dictType)
+#if("" != $treeParentCode && $column.javaField == $treeParentCode)
+          <t-form-item label="${comment}" name="${treeParentCode}">
+            <t-tree-select
+              v-model="form.${treeParentCode}"
+              :data="${businessName}Options"
+              :tree-props="{
+                keys: { value: '${treeCode}', label: '${treeName}', children: 'children' },
+                checkStrictly: true,
+              }"
+              placeholder="请选择${comment}"
+            />
+          </t-form-item>
+#elseif($column.htmlType == "input")
+          <t-form-item label="${comment}" name="${field}">
+            <t-input v-model="form.${field}" placeholder="请输入${comment}" clearable />
+          </t-form-item>
+#elseif($column.htmlType == "input-number")
+          <t-form-item label="${comment}" name="${field}">
+            <t-input-number v-model="form.${field}" placeholder="请输入" />
+          </t-form-item>
+#elseif($column.htmlType == "imageUpload")
+          <t-form-item label="${comment}" name="${field}">
+            <image-upload v-model="form.${field}" :limit="1" />
+          </t-form-item>
+#elseif($column.htmlType == "fileUpload")
+          <t-form-item label="${comment}" name="${field}">
+            <file-upload v-model="form.${field}" />
+          </t-form-item>
+#elseif($column.htmlType == "editor")
+          <t-form-item label="${comment}" name="${field}">
+            <editor v-model="form.${field}" />
+          </t-form-item>
+#elseif($column.htmlType == "select" && "" != $dictType)
+          <t-form-item label="${comment}" name="${field}">
+            <t-select v-model="form.${field}" placeholder="请选择${comment}" clearable>
+              <t-option
+                v-for="dict in ${dictType}"
+                :key="dict.value"
+                :label="dict.label"
+#if($column.javaType == "Integer" || $column.javaType == "Long")
+                :value="parseInt(dict.value)"
+#else
+                :value="dict.value"
+#end
+              />
+            </t-select>
+          </t-form-item>
+#elseif($column.htmlType == "select" && $dictType)
+          <t-form-item label="${comment}" name="${field}">
+            <t-select v-model="form.${field}" placeholder="请选择${comment}" clearable>
+              <t-option label="请选择字典生成" value="" />
+            </t-select>
+          </t-form-item>
+#elseif($column.htmlType == "checkbox" && "" != $dictType)
+          <t-form-item label="${comment}" name="${field}">
+            <t-checkbox-group :model-value="form.${field}?.split(',') ?? []" @update:model-value="form.${field} = ${event}.filter((item: any) => item).join(',')">
+              <t-checkbox
+                v-for="dict in ${dictType}"
+                :key="dict.value"
+                :value="dict.value">
+                {{dict.label}}
+              </t-checkbox>
+            </t-checkbox-group>
+          </t-form-item>
+#elseif($column.htmlType == "checkbox" && $dictType)
+          <t-form-item label="${comment}" name="${field}">
+            <t-checkbox-group :model-value="form.${field}?.split(',') ?? []" @update:model-value="form.${field} = ${event}.filter((item: any) => item).join(',')">
+              <t-checkbox>请选择字典生成</t-checkbox>
+            </t-checkbox-group>
+          </t-form-item>
+#elseif($column.htmlType == "radio" && "" != $dictType)
+          <t-form-item label="${comment}" name="${field}">
+            <t-radio-group v-model="form.${field}">
+              <t-radio
+                v-for="dict in ${dictType}"
+                :key="dict.value"
+#if($column.javaType == "Integer" || $column.javaType == "Long")
+              :value="parseInt(dict.value)"
+#else
+                :value="dict.value"
+#end
+              >{{dict.label}}</t-radio>
+            </t-radio-group>
+          </t-form-item>
+#elseif($column.htmlType == "radio" && $dictType)
+          <t-form-item label="${comment}" name="${field}">
+            <t-radio-group v-model="form.${field}">
+              <t-radio value="1">请选择字典生成</t-radio>
+            </t-radio-group>
+          </t-form-item>
+#elseif($column.htmlType == "datetime")
+          <t-form-item label="${comment}" name="${field}">
+            <t-date-picker
+              v-model="form.${field}"
+              enable-time-picker
+              allow-input
+              clearable
+              placeholder="请选择${comment}"
+            />
+          </t-form-item>
+#elseif($column.htmlType == "textarea")
+          <t-form-item label="${comment}" name="${field}">
+            <t-textarea v-model="form.${field}" placeholder="请输入${comment}" />
+          </t-form-item>
+#end
+#end
+#end
+          </t-form>
+      </t-loading>
+    </t-dialog>
+#end
+#if($isUseDetailMethod)
+
+    <!-- ${functionName}详情 -->
+    <t-dialog
+      v-model:visible="openView"
+      header="${functionName}详情"
+      placement="center"
+      width="700px"
+      attach="body"
+      :footer="false"
+    >
+      <my-descriptions :loading="openViewLoading">
+#foreach($column in $columns)
+#set($javaField=$column.javaField)
+#set($parentheseIndex=$column.columnComment.indexOf("（"))
+#if($parentheseIndex != -1)
+#set($comment=$column.columnComment.substring(0, $parentheseIndex))
+#else
+#set($comment=$column.columnComment)
+#end
+#if($column.isDetail())
+#if($column.htmlType == "imageUpload")
+        <t-descriptions-item label="${comment}">
+          <image-preview :src="form.${javaField}" :width="60" :height="60" />
+        </t-descriptions-item>
+#elseif($column.htmlType == "datetime")
+        <t-descriptions-item label="${comment}">{{ parseTime(form.${javaField}) }}</t-descriptions-item>
+#elseif($column.dictType && "" != $column.dictType)
+        <t-descriptions-item label="${comment}">
+          <dict-tag :options="${column.dictType}" :value="form.${javaField}" />
+        </t-descriptions-item>
+#elseif($column.htmlType == "textarea")
+        <t-descriptions-item label="${comment}" :span="2">{{ form.${javaField} }}</t-descriptions-item>
+#elseif($column.htmlType == "editor")
+        <t-descriptions-item label="${comment}" :span="2">
+          <editor-preview :html-text="form.${javaField}" />
+        </t-descriptions-item>
+#else
+        <t-descriptions-item label="${comment}">{{ form.${javaField} }}</t-descriptions-item>
+#end
+#end
+#end
+      </my-descriptions>
+    </t-dialog>
+#end
+  </t-card>
+</template>
+<script lang="ts" setup>
+defineOptions({
+  name: '${BusinessName}',
+});
+#if($isUseQueryMethod)
+import {
+#if($isUseAddMethod)
+  AddIcon,
+#end
+#if($isUseDetailMethod)
+  BrowseIcon,
+#end
+#if($isUseRemoveMethod)
+  DeleteIcon,
+#end
+#if($isUseExportMethod)
+  DownloadIcon,
+#end
+#if($isUseEditMethod)
+  EditIcon,
+#end
+  RefreshIcon,
+  SearchIcon,
+  SettingIcon,
+  UnfoldLessIcon,
+  UnfoldMoreIcon,
+} from 'tdesign-icons-vue-next';
+#end
+import type {
+#if($isUseQueryMethod)
+  EnhancedTableInstanceFunctions,
+#end
+#if($addOrUpdate)
+  FormInstanceFunctions,
+  FormRule,
+#end
+#if($isUseQueryMethod)
+  PrimaryTableCol,
+#end
+#if($addOrUpdate)
+  SubmitContext,
+#end
+#if($hasSorting && $isUseQueryMethod)
+  TableSort,
+#end
+} from 'tdesign-vue-next';
+import { computed, getCurrentInstance, ref } from 'vue';
+
+## 导入对象类型
+#set($importApiModel = [])
+#if((!$isUseBO && $addOrUpdate || (!$isUseQuery && !$isUseBO) || !$isUseVO) && $importApiModel.add(${ClassName}))#end
+#if($isUseBO && ($addOrUpdate  || !$isUseQuery) && $importApiModel.add($bo))#end
+#if($isUseQuery && $isUseQueryMethod && $importApiModel.add(${query}))#end
+#if($isUseVO && ($isUseQueryMethod || $isUseDetailMethod || $isUseEditMethod) && $importApiModel.add(${vo}))#end
+#if(!$importApiModel.isEmpty())
+import type { $StringUtils.join($importApiModel, ", ") } from '@/api/${moduleName}/model/${businessName}Model';
+#end
+## 导入api
+#set($importApi = [])
+#if($isUseQueryMethod && $importApi.add('list'+${BusinessName}))#end
+#if(($isUseEditMethod || $isUseDetailMethod) && $importApi.add('get'+${BusinessName}))#end
+#if($isUseRemoveMethod && $importApi.add('del'+${BusinessName}))#end
+#if($isUseAddMethod && $importApi.add('add'+${BusinessName}))#end
+#if($isUseEditMethod && $importApi.add('update'+${BusinessName}))#end
+#if(!$importApi.isEmpty())
+import { $StringUtils.join($importApi, ", ") } from '@/api/${moduleName}/${businessName}';
+#end
+#foreach($column in $columns)
+#if($column.htmlType == "editor")
+import Editor from '@/components/editor/index.vue';
+import EditorPreview from '@/components/editor-preview/index.vue';
+#end
+#end
+#if($isUseVO)
+#set($vo="${ClassName}Vo")
+#else
+#set($vo=$ClassName)
+#end
+#if($isUseBO)
+#set($bo="${ClassName}Form")
+#else
+#set($bo=$ClassName)
+#end
+#if($isUseQuery)
+#set($query="${ClassName}Query")
+#else
+#set($query=$bo)
+#end
+
+const { proxy } = getCurrentInstance();
+#if(${dicts} != '')
+#set($dictsNoSymbol=$dicts.replace("'", ""))
+const { ${dictsNoSymbol} } = proxy.useDict(${dicts});
+#end
+
+#if($isUseDetailMethod)
+const openView = ref(false);
+const openViewLoading = ref(false);
+#end
+#if($isUseQueryMethod)
+const ${businessName}List = ref<${vo}[]>([]);
+const loading = ref(false);
+const columnControllerVisible = ref(false);
+const showSearch = ref(true);
+const tableRef = ref<EnhancedTableInstanceFunctions>();
+#end
+#if($hasSorting && $isUseQueryMethod)
+const sort = ref<TableSort>();
+#end
+#if($addOrUpdate)
+const ${businessName}Options = ref<${vo}[]>([]);
+const open = ref(false);
+const buttonLoading = ref(false);
+const title = ref('');
+const ${businessName}Ref = ref<FormInstanceFunctions>();
+const expandedTreeNodes = ref([]);
+#end
+#foreach ($column in $columns)
+#if($column.isQuery() && $column.htmlType == "datetime" && $column.queryType == "BETWEEN")
+#set($AttrName=$column.javaField.substring(0,1).toUpperCase() + ${column.javaField.substring(1)})
+const dateRange${AttrName} = ref([]);
+#end
+#end
+#if($addOrUpdate)
+
+// 校验规则
+const rules = ref<Record<string, Array<FormRule>>>({
+#foreach ($column in $columns)
+#if($column.isInsert() || $column.isEdit())
+#set($length = $GenUtil.getColumnLength($column.getColumnType()))
+#if($column.isRequired() || ($column.javaType == 'String' && $length > 0))
+#set($parentheseIndex=$column.columnComment.indexOf("（"))
+#if($parentheseIndex != -1)
+#set($comment=$column.columnComment.substring(0, $parentheseIndex))
+#else
+#set($comment=$column.columnComment)
+#end
+  $column.javaField: [#if($column.isRequired()){ required: true, message: '$comment不能为空' }#end#if($column.javaType == 'String' && $length > 0)#if($column.isRequired()), #end{ max: $length, message: '${comment}不能超过${length}个字符}' }#end],
+#end
+#end
+#end
+});
+#end
+#if($isUseQueryMethod)
+
+// 列显隐信息
+const columns = ref<Array<PrimaryTableCol>>([
+#foreach($column in $columns)
+#set($javaField=$column.javaField)
+#set($parentheseIndex=$column.columnComment.indexOf("（"))
+#if($parentheseIndex != -1)
+#set($comment=$column.columnComment.substring(0, $parentheseIndex))
+#else
+#set($comment=$column.columnComment)
+#end
+#if($column.isPk())
+#elseif($column.isList() && $column.htmlType == "datetime")
+  { title: `${comment}`, colKey: '${javaField}', align: 'center', minWidth: 112, width: 180#if($column.isSorting()), sorter: true#end },
+#elseif($column.isList() && $column.htmlType == "imageUpload")
+  { title: `${comment}`, colKey: '${javaField}', align: 'center', width: 100#if($column.isSorting()), sorter: true#end },
+#elseif($column.isList() && $column.htmlType == "textarea")
+  { title: `${comment}`, colKey: '${javaField}', align: 'center', ellipsis: true#if($column.isSorting()), sorter: true#end },
+#elseif($column.isList() && "" != $javaField)
+#if(${foreach.index} == 1)
+  { title: `${comment}`, colKey: '${javaField}'#if($column.isSorting()), sorter: true#end },
+#else
+  { title: `${comment}`, colKey: '${javaField}', align: 'center'#if($column.isSorting()), sorter: true#end },
+#end
+#end
+#end
+#if($isUseAddMethod || $isUseDetailMethod || $isUseEditMethod || $isUseRemoveMethod)
+  { title: `操作`, colKey: 'operation', align: 'center', width: 240 },
+#end
+]);
+#end
+#if($addOrUpdate || $isUseDetailMethod)
+// 提交表单对象
+const form = ref<$vo#if($addOrUpdate)#if($isUseBO) & $bo#elseif($isUseVO) & $ClassName#end#end>({});
+#end
+#if($isUseQueryMethod)
+// 查询对象
+const queryParams = ref<${query}>({
+#foreach ($column in $columns)
+#if($column.isQuery() && $column.queryType != "BETWEEN")
+  $column.javaField: undefined,
+#end
+#end
+});
+const isExpand = computed(() => {
+  return expandedTreeNodes.value.length !== 0;
+});
+#end
+#if($isUseQueryMethod)
+
+/** 查询${functionName}列表 */
+function getList() {
+  loading.value = true;
+#foreach ($column in $columns)
+#if($column.isQuery() && $column.htmlType == "datetime" && $column.queryType == "BETWEEN")
+#set($AttrName=$column.javaField.substring(0,1).toUpperCase() + ${column.javaField.substring(1)})
+  proxy.addDateRange(queryParams.value, dateRange${AttrName}.value, '${AttrName}');
+#end
+#end
+  list${BusinessName}(queryParams.value)
+    .then((response) => {
+      ${businessName}List.value = proxy.handleTree(response.data, '${treeCode}', '${treeParentCode}');
+    })
+    .finally(() => (loading.value = false));
+}
+#end
+#if($isUseAddMethod || $isUseDetailMethod || $isUseEditMethod)
+
+// 表单重置
+function reset() {
+  form.value = {};
+#if($addOrUpdate)
+  proxy.resetForm('${businessName}Ref');
+#end
+}
+#end
+#if($isUseQueryMethod)
+
+/** 搜索按钮操作 */
+function handleQuery() {
+  getList();
+}
+
+/** 重置按钮操作 */
+function resetQuery() {
+#foreach ($column in $columns)
+#if($column.isQuery() && $column.htmlType == "datetime" && $column.queryType == "BETWEEN")
+#set($AttrName=$column.javaField.substring(0,1).toUpperCase() + ${column.javaField.substring(1)})
+  dateRange${AttrName}.value = [];
+#end
+#end
+  proxy.resetForm('queryRef');
+#if($hasSorting)
+  handleSortChange(null);
+#else
+  handleQuery();
+#end
+}
+#if($hasSorting)
+
+/** 排序触发事件 */
+function handleSortChange(value?: TableSort) {
+  sort.value = value;
+  if (Array.isArray(value)) {
+    queryParams.value.orderByColumn = value.map((item) => item.sortBy).join(',');
+    queryParams.value.isAsc = value.map((item) => (item.descending ? 'descending' : 'ascending')).join(',');
+  } else {
+    queryParams.value.orderByColumn = value?.sortBy;
+    queryParams.value.isAsc = value?.descending ? 'descending' : 'ascending';
+  }
+  getList();
+}
+#end
+
+/** 展开/折叠操作 */
+function toggleExpandAll() {
+  if (isExpand.value) {
+    tableRef.value.foldAll();
+  } else {
+    tableRef.value.expandAll();
+  }
+}
+#end
+#if($isUseDetailMethod)
+
+/** 详情按钮操作 */
+function handleDetail(row: ${vo}) {
+  reset();
+  openView.value = true;
+  openViewLoading.value = true;
+  const ${pkColumn.javaField} = row.${pkColumn.javaField};
+  get${BusinessName}(${pkColumn.javaField}).then((response) => {
+    form.value = response.data;
+    openViewLoading.value = false;
+  });
+}
+#end
+#if($isUseAddMethod)
+
+/** 新增按钮操作 */
+function handleAdd(row?: ${vo}) {
+  reset();
+#if($isUseQueryMethod)
+  getTreeselect();
+#end
+  if (row != null && row.${treeCode}) {
+    form.value.${treeParentCode} = row.${treeCode};
+  } else {
+    form.value.${treeParentCode} = 0;
+  }
+  open.value = true;
+  title.value = '添加${functionName}';
+}
+#end
+#if($isUseEditMethod)
+
+/** 修改按钮操作 */
+async function handleUpdate(row?: ${vo}) {
+  buttonLoading.value = true;
+  reset();
+  open.value = true;
+  title.value = '修改${functionName}';
+  await getTreeselect();
+  get${BusinessName}(row.${pkColumn.javaField}).then((response) => {
+    buttonLoading.value = false;
+    form.value = response.data;
+  });
+}
+#end
+#if($addOrUpdate)
+#if($isUseQueryMethod)
+
+/** 查询${functionName}下拉树结构 */
+function getTreeselect() {
+  list${BusinessName}().then((response) => {
+    ${businessName}Options.value = [
+      { ${treeCode}: 0, ${treeName}: '顶级节点', children: proxy.handleTree(response.data, '${treeCode}', '${treeParentCode}') }
+    ];
+  });
+}
+#end
+
+/** 提交表单 */
+function submitForm({ validateResult, firstError }: SubmitContext) {
+  if (validateResult === true) {
+    buttonLoading.value = true;
+    const msgLoading = proxy.${modal}.msgLoading('提交中...');
+    if (form.value.${pkColumn.javaField}) {
+#if($isUseEditMethod)
+      update${BusinessName}(form.value)
+        .then(() => {
+          proxy.${modal}.msgSuccess('修改成功');
+          open.value = false;
+#if($isUseQueryMethod)
+          getList();
+#end
+        })
+        .finally(() => {
+          buttonLoading.value = false;
+          proxy.${modal}.msgClose(msgLoading);
+        });
+#else
+      proxy.${modal}.msgError('不支持编辑${functionName}');
+#end
+    } else {
+#if($isUseAddMethod)
+      add${BusinessName}(form.value)
+        .then(() => {
+          proxy.${modal}.msgSuccess('新增成功');
+          open.value = false;
+#if($isUseQueryMethod)
+          getList();
+#end
+        })
+        .finally(() => {
+          buttonLoading.value = false;
+          proxy.${modal}.msgClose(msgLoading);
+        });
+#else
+      proxy.${modal}.msgError('不支持新增${functionName}');
+#end
+    }
+  } else {
+    proxy.${modal}.msgError(firstError);
+  }
+}
+#end
+#if($isUseRemoveMethod)
+
+/** 删除按钮操作 */
+function handleDelete(row: ${vo}) {
+  proxy.#[[$modal]]#.confirm(`是否确认删除${functionName}编号为#[[$]]#{row.${pkColumn.javaField}}的数据项？`, () => {
+    const msgLoading = proxy.${modal}.msgLoading('正在删除中...');
+    return del${BusinessName}(row.${pkColumn.javaField})
+      .then(() => {
+#if($isUseQueryMethod)
+        getList();
+#end
+        proxy.${modal}.msgSuccess('删除成功');
+      })
+      .finally(() => {
+        proxy.${modal}.msgClose(msgLoading);
+      });
+  });
+}
+#end
+#if($isUseQueryMethod)
+#if($isUseExportMethod)
+
+/** 导出按钮操作 */
+function handleExport() {
+#foreach ($column in $columns)
+#if($column.isQuery() && $column.htmlType == "datetime" && $column.queryType == "BETWEEN")
+#set($AttrName=$column.javaField.substring(0,1).toUpperCase() + ${column.javaField.substring(1)})
+  proxy.addDateRange(queryParams.value, dateRange${AttrName}.value, '${AttrName}');
+#end
+#end
+  proxy.download(
+    '${moduleName}/${businessName}/export',
+    {
+      ...queryParams.value,
+    },
+    `${businessName}_#[[${new Date().getTime()}]]#.xlsx`,
+  );
+}
+#end
+
+getList();
+#end
+</script>

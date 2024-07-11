@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.dromara.system.mapper.SysDictTypeMapper">
+
+    <resultMap id="SysDictTypeResultVo" autoMapping="true" type="org.dromara.system.domain.vo.SysDictTypeVo">
+    </resultMap>
+    <resultMap id="SysDictTypeResult" autoMapping="true" type="org.dromara.system.domain.SysDictType">
+    </resultMap>
+
+    <sql id="selectSysDictTypeVo">
+        select sdt.dict_id, sdt.dict_name, sdt.dict_type, sdt.create_by, sdt.create_time, sdt.update_by, sdt.update_time, sdt.remark from sys_dict_type sdt
+    </sql>
+    <select id="queryList" parameterType="org.dromara.system.domain.query.SysDictTypeQuery" resultMap="SysDictTypeResultVo">
+        <include refid="selectSysDictTypeVo"/>
+        <where>
+            <if test="dictName != null and dictName != ''"> and sdt.dict_name like concat(concat('%', #{dictName}), '%')</if>
+            <if test="dictType != null and dictType != ''"> and sdt.dict_type like concat(concat('%', #{dictType}), '%')</if>
+            <if test="params.beginTime != null and params.endTime != null">and sdt.create_time between #{params.beginTime} and #{params.endTime}</if>
+        </where>
+        order by create_time desc
+    </select>
+
+</mapper>

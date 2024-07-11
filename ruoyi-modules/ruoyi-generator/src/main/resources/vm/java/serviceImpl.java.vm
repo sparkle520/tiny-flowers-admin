@@ -1,0 +1,156 @@
+package ${packageName}.service.impl;
+
+#if($isUseAddMethod || $isUseEditMethod)
+import org.dromara.common.core.utils.MapstructUtils;
+#end
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+#if($hasSorting && ($isUseExportMethod || ($isUseQueryMethod && $table.isTree())))
+import org.dromara.common.mybatis.core.page.SortQuery;
+#end
+#if($table.isCrud() && $isUseQueryMethod)
+import org.dromara.common.mybatis.core.page.TableDataInfo;
+import org.dromara.common.mybatis.core.page.PageQuery;
+#end
+import org.springframework.stereotype.Service;
+#if($isUseAddMethod || $isUseEditMethod || $isUseRemoveMethod)
+import org.springframework.transaction.annotation.Transactional;
+#end
+import ${packageName}.domain.${ClassName};
+#if($isUseBO && ($isUseAddMethod || $isUseEditMethod || !$isUseQuery))
+#set($bo="${ClassName}Bo")
+#set($boObjName="bo")
+import ${packageName}.domain.bo.${ClassName}Bo;
+#else
+#set($bo=$ClassName)
+#set($boObjName="${className}")
+#end
+#if($isUseQuery && ($isUseQueryMethod || $isUseExportMethod))
+#set($query="${ClassName}Query")
+import ${packageName}.domain.query.${ClassName}Query;
+#else
+#set($query=$bo)
+#end
+#if($isUseVO && ($isUseQueryMethod || $isUseDetailMethod || $isUseEditMethod || $isUseExportMethod))
+#set($vo="${ClassName}Vo")
+import ${packageName}.domain.vo.${ClassName}Vo;
+#else
+#set($vo=$ClassName)
+#end
+import ${packageName}.mapper.${ClassName}Mapper;
+import ${packageName}.service.I${ClassName}Service;
+
+#if($isUseRemoveMethod)
+import java.util.Collection;
+#end
+#if($isUseExportMethod || ($isUseQueryMethod && $table.isTree()))
+import java.util.List;
+#end
+
+/**
+ * ${functionName}Service业务层处理
+ *
+ * @author ${author}
+ * @date ${datetime}
+ */
+@Service
+public class ${ClassName}ServiceImpl extends ServiceImpl<${ClassName}Mapper, ${ClassName}> implements I${ClassName}Service {
+#if($isUseDetailMethod || $isUseEditMethod)
+
+    /**
+     * 查询${functionName}
+     *
+     * @param ${pkColumn.javaField} 主键
+     * @return ${vo}
+     */
+    @Override
+    public ${vo} queryById(${pkColumn.javaType} ${pkColumn.javaField}) {
+#if($isUseVO)
+        return baseMapper.selectVoById(${pkColumn.javaField});
+#else
+        return baseMapper.selectById(${pkColumn.javaField});
+#end
+    }
+#end
+#if($isUseQueryMethod && $table.isCrud())
+
+    /**
+     * 查询${functionName}列表
+     *
+     * @param query 查询对象
+     * @return ${vo}
+     */
+    @Override
+    public TableDataInfo<${vo}> queryPageList(${query} query) {
+        return PageQuery.of(() -> baseMapper.queryList(query));
+    }
+#end
+#if($isUseExportMethod || ($isUseQueryMethod && $table.isTree()))
+
+    /**
+     * 查询${functionName}列表
+     *
+     * @param query 查询对象
+     * @return ${vo}
+     */
+    @Override
+    public List<${vo}> queryList(${query} query) {
+#if($hasSorting)
+        return SortQuery.of(() -> baseMapper.queryList(query));
+#else
+        return baseMapper.queryList(query);
+#end
+    }
+#end
+#if($isUseAddMethod)
+
+    /**
+     * 根据新增业务对象插入${functionName}
+     *
+     * @param ${boObjName} ${functionName}新增业务对象
+     * @return Boolean
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Boolean insertByBo(${bo} ${boObjName}) {
+#if($isUseBO)
+        ${ClassName} add = MapstructUtils.convert(${boObjName}, ${ClassName}.class);
+        return save(add);
+#else
+        return save(${boObjName});
+#end
+    }
+#end
+#if($isUseEditMethod)
+
+    /**
+     * 根据编辑业务对象修改${functionName}
+     *
+     * @param ${boObjName} ${functionName}编辑业务对象
+     * @return Boolean
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Boolean updateByBo(${bo} ${boObjName}) {
+#if($isUseBO)
+        ${ClassName} update = MapstructUtils.convert(${boObjName}, ${ClassName}.class);
+        return updateById(update);
+#else
+        return updateById(${boObjName});
+#end
+    }
+#end
+#if($isUseRemoveMethod)
+
+    /**
+     * 校验并批量删除${functionName}信息
+     *
+     * @param ids 主键集合
+     * @return Boolean
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Boolean deleteWithValidByIds(Collection<${pkColumn.javaType}> ids) {
+        return removeByIds(ids);
+    }
+#end
+}

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.dromara.system.mapper.SysNoticeMapper">
+
+    <resultMap id="SysNoticeResultVo" autoMapping="true" type="org.dromara.system.domain.vo.SysNoticeVo">
+    </resultMap>
+    <resultMap id="SysNoticeResult" autoMapping="true" type="org.dromara.system.domain.SysNotice">
+    </resultMap>
+
+    <sql id="selectSysNoticeVo">
+        select sn.notice_id, sn.notice_title, sn.notice_type, sn.notice_content, sn.status, sn.create_by, sn.create_time, sn.update_by, sn.update_time, sn.remark from sys_notice sn
+    </sql>
+    <select id="queryList" parameterType="org.dromara.system.domain.query.SysNoticeQuery" resultMap="SysNoticeResultVo">
+        select sn.notice_id,
+               sn.notice_title,
+               sn.notice_type,
+               sn.notice_content,
+               sn.status,
+               sn.create_by,
+               sn.create_time,
+               sn.update_by,
+               sn.update_time,
+               sn.remark,
+               su.user_name as create_by_name
+        from sys_notice sn
+                 left join sys_user su on sn.create_by = su.user_id
+        <where>
+            <if test="noticeTitle != null and noticeTitle != ''"> and sn.notice_title like concat(concat('%', #{noticeTitle}), '%')</if>
+            <if test="noticeType != null and noticeType != ''"> and sn.notice_type = #{noticeType}</if>
+            <if test="status != null and status != ''"> and sn.status = #{status}</if>
+            <if test="createByName != null"> and su.user_name like concat(concat('%', #{createByName}), '%')</if>
+        </where>
+        order by sn.create_time desc
+    </select>
+
+</mapper>

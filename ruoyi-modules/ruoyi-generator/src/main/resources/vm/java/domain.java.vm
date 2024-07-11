@@ -1,0 +1,83 @@
+package ${packageName}.domain;
+
+#if(!$isUseQuery && !$isUseBO)
+import org.dromara.common.mybatis.core.domain.BaseEntity;
+#end
+import com.baomidou.mybatisplus.annotation.*;
+import lombok.Data;
+#if(!$isUseQuery && !$isUseBO)
+import lombok.EqualsAndHashCode;
+#end
+#if(!$isUseBO)
+#foreach ($column in $columns)
+#if($column.isRequired())
+import org.dromara.common.core.validate.AddGroup;
+import org.dromara.common.core.validate.EditGroup;
+import jakarta.validation.constraints.*;
+#break
+#end
+#end
+#end
+
+#foreach ($import in $importList)
+import ${import};
+#end
+#if($isUseQuery || $isUseBO)
+import java.io.Serial;
+import java.io.Serializable;
+#end
+import java.util.Date;
+import java.math.BigDecimal;
+
+/**
+ * ${functionName}对象 ${tableName}
+ *
+ * @author ${author}
+ * @date ${datetime}
+ */
+@Data
+#if(!$isUseQuery && !$isUseBO)
+@EqualsAndHashCode(callSuper = true)
+#end
+@TableName("${tableName}")
+public class ${ClassName} #if(!$isUseQuery && !$isUseBO)extends BaseEntity#{else}implements Serializable#end {
+#if($isUseQuery || $isUseBO)
+
+    @Serial
+    private static final long serialVersionUID = 1L;
+#end
+
+#foreach ($column in $columns)
+    /**
+     * $column.columnComment
+     */
+#if(!$isUseBO && $column.isRequired())
+#set($Group0 = [])
+#if($column.isInsert() && $Group0.add('AddGroup.class'))#end
+#if(($column.isEdit() || $column.isPk()) && $Group0.add('EditGroup.class'))#end
+#set($Group = $StringUtils.join($Group0, ", "))
+#if($column.javaType == 'String')
+    @NotBlank(message = "$column.columnComment不能为空"#if($Group), groups = {${Group}}#end)
+#else
+    @NotNull(message = "$column.columnComment不能为空"#if($Group), groups = {${Group}}#end)
+#end
+#end
+#if($column.javaField=='version')
+    @Version
+#end
+#if($column.javaField=='delFlag')
+    @TableLogic
+#end
+#if($StringUtils.containsAnyIgnoreCase($column.javaField, "createBy", "createTime", "version", "createDept", "delFlag"))
+    @TableField(fill = FieldFill.INSERT)
+#end
+#if($StringUtils.containsAnyIgnoreCase($column.javaField, "updateBy", "updateTime"))
+    @TableField(fill = FieldFill.INSERT_UPDATE)
+#end
+#if($column.isPk())
+    @TableId(value = "$column.columnName"#if($column.isIncrement()), type = IdType.AUTO#end)
+#end
+    private $column.javaType $column.javaField;
+
+#end
+}

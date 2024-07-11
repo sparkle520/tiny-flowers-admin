@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.dromara.system.mapper.SysOperLogMapper">
+
+    <resultMap id="SysOperLogResult" autoMapping="true" type="org.dromara.system.domain.SysOperLog">
+    </resultMap>
+    <resultMap id="SysOperLogResultVo" autoMapping="true" type="org.dromara.system.domain.vo.SysOperLogVo">
+    </resultMap>
+
+    <sql id="selectSysOperLogVo">
+        select sol.oper_id, sol.tenant_id, sol.user_id, sol.title, sol.business_type, sol.method, sol.request_method, sol.operator_type, sol.oper_name, sol.dept_name, sol.oper_url, sol.oper_ip, sol.oper_location, sol.oper_param, sol.json_result, sol.status, sol.error_msg, sol.oper_time, sol.cost_time from sys_oper_log sol
+    </sql>
+    <select id="queryList" parameterType="org.dromara.system.domain.query.SysOperLogQuery" resultMap="SysOperLogResultVo">
+        <include refid="selectSysOperLogVo"/>
+        <where>
+            <if test="userId != null"> and sol.user_id = #{userId}</if>
+            <if test="title != null and title != ''"> and sol.title like concat(concat('%', #{title}), '%')</if>
+            <if test="businessType != null "> and sol.business_type = #{businessType}</if>
+            <foreach collection="businessTypes" index="index" item="item" open="and sol.business_type in (" separator="," close=")" nullable="true">
+                #{item}
+            </foreach>
+            <if test="operName != null and operName != ''"> and sol.oper_name like concat(concat('%', #{operName}), '%')</if>
+            <if test="operIp != null and operIp != ''"> and sol.oper_ip like concat(concat('%', #{operIp}), '%')</if>
+            <if test="status != null "> and sol.status = #{status}</if>
+            <if test="params.beginOperTime != null and params.endOperTime != null">and sol.oper_time between #{params.beginOperTime} and #{params.endOperTime}</if>
+        </where>
+        order by oper_id desc
+    </select>
+
+
+</mapper>

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.dromara.system.mapper.SysLogininforMapper">
+
+    <resultMap id="SysLogininforResult" autoMapping="true" type="org.dromara.system.domain.SysLogininfor">
+    </resultMap>
+    <resultMap id="SysLogininforResultVo" autoMapping="true" type="org.dromara.system.domain.vo.SysLogininforVo">
+    </resultMap>
+
+    <sql id="selectSysLogininforVo">
+        select sl.info_id, sl.tenant_id, sl.user_id, sl.user_name, sl.ipaddr, sl.login_location, sl.browser, sl.os, sl.status, sl.client_key, sl.device_type, sl.msg, sl.login_time from sys_logininfor sl
+    </sql>
+    <select id="queryList" parameterType="org.dromara.system.domain.bo.SysLogininforBo" resultMap="SysLogininforResultVo">
+        <include refid="selectSysLogininforVo"/>
+        <where>
+            <if test="userId != null"> and sl.user_id = #{userId}</if>
+            <if test="userName != null and userName != ''"> and sl.user_name like concat(concat('%', #{userName}), '%')</if>
+            <if test="ipaddr != null and ipaddr != ''"> and sl.ipaddr like concat(concat('%', #{ipaddr}), '%')</if>
+            <if test="status != null and status != ''"> and sl.status = #{status}</if>
+            <if test="clientKey != null and clientKey != ''"> and sl.client_key like concat(concat('%', #{clientKey}), '%')</if>
+            <if test="deviceType != null and deviceType != ''"> and sl.device_type like concat(concat('%', #{deviceType}), '%')</if>
+            <if test="params.beginTime != null and params.endTime != null">and sl.login_time between #{params.beginTime} and #{params.endTime}</if>
+        </where>
+        order by info_id desc
+    </select>
+
+</mapper>
