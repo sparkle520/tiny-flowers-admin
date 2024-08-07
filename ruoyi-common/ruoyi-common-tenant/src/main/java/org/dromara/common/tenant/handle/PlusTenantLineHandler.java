@@ -38,7 +38,11 @@ public class PlusTenantLineHandler implements TenantLineHandler {
         // 非业务表
         excludes.addAll(Set.of(
             "gen_table",
-            "gen_table_column"
+            "gen_table_column",
+            "article",
+            "article_sort",
+            "tag",
+            "tag_article"
         ));
         return excludes.contains(tableName);
     }

@@ -2,6 +2,7 @@ package org.dromara.system.controller.system;
 
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
+import cn.dev33.satoken.annotation.SaIgnore;
 import cn.dev33.satoken.annotation.SaMode;
 import cn.hutool.core.net.URLDecoder;
 import cn.hutool.core.util.ObjectUtil;
@@ -99,6 +100,7 @@ public class SysOssController extends BaseController {
      */
     @SaCheckPermission("system:oss:list")
     @GetMapping("/listByUrls")
+    @SaIgnore
     public R<List<SysOssVo>> listByUrls(@NotBlank(message = "url不能为空") String urls) {
         String[] urlArray = URLDecoder.decode(String.valueOf(urls), StandardCharsets.UTF_8).split(",");
         List<SysOssVo> list = ossService.listVoByUrls(List.of(urlArray));

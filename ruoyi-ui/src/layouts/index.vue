@@ -1,6 +1,6 @@
 <template>
   <t-watermark
-    :watermark-content="{ text: name }"
+    :watermark-content="{ text: '' }"
     :y="100"
     :x="80"
     :width="name.length * 20"

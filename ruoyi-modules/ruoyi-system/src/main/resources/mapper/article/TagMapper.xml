@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.dromara.article.mapper.TagMapper">
+
+    <resultMap id="TagResult" autoMapping="true" type="org.dromara.article.domain.Tag">
+        <id property="id" column="id"/>
+    </resultMap>
+    <resultMap id="TagResultVo" autoMapping="true" type="org.dromara.article.domain.vo.TagVo">
+        <id property="id" column="id"/>
+        <id property="name" column="name"/>
+        <id property="articleCount" column="article_count"/>
+    </resultMap>
+
+    <sql id="selectTagVo">
+        select t.id, t.name from tag t
+    </sql>
+    <sql id="selectTagVoDistinct">
+        select distinct t.id, t.name from tag t
+    </sql>
+    <select id="queryList" parameterType="org.dromara.article.domain.vo.TagVo" resultMap="TagResultVo">
+        SELECT
+        t.id,
+        t.name,
+        count( tag_id ) AS article_count
+        FROM
+        tag_article ta
+        LEFT JOIN tag t ON t.id = ta.tag_id
+        GROUP BY
+        ta.tag_id
+        <where>
+            <if test="name != null and name != ''"> and t.name like concat(concat('%', #{name}), '%')</if>
+        </where>
+    </select>
+    <select id="selectTagListByArticleId" parameterType="Long" resultType="org.dromara.article.domain.vo.TagVo">
+        <include refid="selectTagVoDistinct"/>
+        LEFT JOIN tag_article `at` ON  t.id = `at`.tag_id where `at`.article_id = #{articleId}
+    </select>
+
+    <delete id="deleteTagsByArticleId" parameterType="Long">
+                 delete from tag_article where article_id = #{articleId}
+    </delete>
+
+    <insert id="insertTagArticle" >
+        insert into tag_article (tag_id,article_id)
+        select
+            t.id,
+            #{id}
+            from tag t where t.name = #{tag}
+    </insert>
+</mapper>

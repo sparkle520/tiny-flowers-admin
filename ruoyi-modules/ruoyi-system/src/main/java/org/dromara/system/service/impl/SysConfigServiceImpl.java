@@ -97,12 +97,12 @@ public class SysConfigServiceImpl extends ServiceImpl<SysConfigMapper, SysConfig
      */
     @Override
     public String insertConfig(SysConfigBo bo) {
-        SysConfig config = MapstructUtils.convert(bo, SysConfig.class);
-        boolean isGlobal = Objects.equals(YesNoEnum.YES.getCodeNum(), bo.getIsGlobal());
-        int row = TenantHelper.ignore(isGlobal, () ->
-            baseMapper.insert(config)
-        );
-        if (row > 0) {
+            SysConfig config = MapstructUtils.convert(bo, SysConfig.class);
+            boolean isGlobal = Objects.equals(YesNoEnum.YES.getCodeNum(), bo.getIsGlobal());
+            int row = TenantHelper.ignore(isGlobal, () ->
+                baseMapper.insert(config)
+            );
+            if (row > 0) {
             CacheUtils.put(GlobalConstants.getGlobalKey(isGlobal, CacheNames.SYS_CONFIG), config.getConfigKey(), config.getConfigValue());
             return config.getConfigValue();
         }

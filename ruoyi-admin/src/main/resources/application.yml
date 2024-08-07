@@ -1,7 +1,7 @@
 # 项目相关配置
 ruoyi:
   # 名称
-  name: ruoyi-tdesign
+  name: tiny-flowers
   # 版本
   version: ${revision}
   # 版权年份
@@ -121,6 +121,8 @@ sa-token:
         - /system/**
         - /monitor/**
         - /resource/**
+        - /article/**
+        - /articleSort/**
         - /demo/**
     user:
       # 允许动态设置 token 有效期
@@ -167,7 +169,7 @@ security:
 # 多租户配置
 tenant:
   # 是否开启
-  enable: true
+  enable: false
   # 排除表
   excludes:
     - sys_menu

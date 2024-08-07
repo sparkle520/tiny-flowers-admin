@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.dromara.article.mapper.ArticleMapper">
+
+    <resultMap id="ArticleResult" autoMapping="true" type="org.dromara.article.domain.Article">
+        <id property="id" column="id"/>
+    </resultMap>
+    <resultMap id="ArticleResultVo" autoMapping="true" type="org.dromara.article.domain.vo.ArticleVo">
+        <id property="id" column="id"/>
+    </resultMap>
+
+    <sql id="selectArticleVo">
+        select s.sort_name,
+               u.nick_name AS author_name,
+               a.id,
+               a.title,
+               a.intro,
+               a.img,
+               a.content,
+               a.author,
+               a.status,
+               a.view_scope_type,
+               a.view_count,
+               a.collect_count,
+               a.thumbs_up_count,
+               a.comment_count,
+               a.sort_id,
+               a.create_time,
+               a.create_by,
+               a.update_time,
+               a.update_by
+        from article a
+                 LEFT JOIN sys_user u ON a.author = u.user_id
+                 LEFT JOIN article_sort s ON a.sort_id = s.id
+    </sql>
+    <select id="queryList" parameterType="org.dromara.article.domain.query.ArticleQuery" resultMap="ArticleResultVo">
+        <include refid="selectArticleVo"/>
+        <where>
+            <if test="title != null and title != ''">and a.title like concat('%',#{title},'%')</if>
+            <if test="intro != null and intro != ''">and a.intro like concat('%',#{intro},'%')</if>
+            <if test="img != null and img != ''">and a.img = #{img}</if>
+            <if test="author != null">and a.author = #{author}</if>
+            <if test="status != null">and a.status = #{status}</if>
+            <if test="delFlag != null">and a.del_flag = #{delFlag}</if>
+            <if test="viewScopeType != null">and a.view_scope_type = #{viewScopeType}</if>
+            <if test="sortId != null">and a.sort_id = #{sortId}</if>
+        </where>
+        order by a.id desc
+    </select>
+    <select id="queryArticlePre" resultType="org.dromara.article.domain.vo.ArticleShort" parameterType="Long">
+        select a.id, a.title,a.img from article a
+        where a.id &lt; #{id} order by a.id DESC limit 0,1;
+    </select>
+    <select id="queryArticleCur" resultType="org.dromara.article.domain.vo.ArticleVo" parameterType="Long">
+        select s.sort_name,
+               u.nick_name AS author_name,
+               a.id,
+               a.title,
+               a.intro,
+               a.img,
+               a.content,
+               a.author,
+               a.status,
+               a.content_md,
+               a.view_scope_type,
+               a.view_count,
+               a.collect_count,
+               a.thumbs_up_count,
+               a.comment_count,
+               a.sort_id,
+               a.create_time,
+               a.create_by,
+               a.update_time,
+               a.update_by
+        from article a
+                 LEFT JOIN sys_user u ON a.author = u.user_id
+                 LEFT JOIN article_sort s ON a.sort_id = s.id
+        where a.id = #{id};
+
+    </select>
+    <select id="queryArticleNext" resultType="org.dromara.article.domain.vo.ArticleShort" parameterType="Long">
+        select a.id, a.title,a.img from article a
+        where a.id > #{id} order by a.id limit 0,1;
+
+    </select>
+    <select id="queryPageListByString" resultType="org.dromara.article.domain.vo.ArticleVo" parameterType="String">
+        select s.sort_name,
+               u.nick_name AS author_name,
+               a.id,
+               a.title,
+               a.intro,
+               a.img,
+               a.content,
+               a.author,
+               a.status,
+               a.content_md,
+               a.view_scope_type,
+               a.view_count,
+               a.collect_count,
+               a.thumbs_up_count,
+               a.comment_count,
+               a.sort_id,
+               a.create_time,
+               a.create_by,
+               a.update_time,
+               a.update_by
+        from article a
+                 LEFT JOIN sys_user u ON a.author = u.user_id
+                 LEFT JOIN article_sort s ON a.sort_id = s.id
+        where a.title like concat('%',#{query},'%') or a.intro like concat('%',#{query},'%')
+        order by a.id desc
+    </select>
+
+
+</mapper>

@@ -27,7 +27,6 @@ powerjob:
     server-address: 127.0.0.1:7700
     store-strategy: disk
 
-
 --- # 数据源配置
 spring:
   datasource:

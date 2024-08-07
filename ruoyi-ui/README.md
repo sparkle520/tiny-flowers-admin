@@ -3,7 +3,7 @@
 </p>
 <p align="center">
   <a href="https://tdesign.tencent.com/starter/vue-next/#/dashboard/base" target="_blank">
-    <img alt="TDesign Logo" width="200" src="https://tdesign.gtimg.com/starter/brand-logo.svg">
+    <img alt="TDesign Logo" width="200" src="/src/assets/icons/svg/logo.svg">
   </a>
 </p>
 

@@ -159,7 +159,7 @@ const type = ref('password');
 const form = ref<FormInstanceFunctions>();
 const formData = ref({
   phone: '',
-  account: 'admin',
+  account: 'sparkle520',
   password: 'admin123',
   rememberMe: false,
   code: '',

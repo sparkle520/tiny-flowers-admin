@@ -15,6 +15,7 @@
         <module>ruoyi-job</module>
         <module>ruoyi-system</module>
         <module>ruoyi-message</module>
+        <module>ruoyi-tinyflowers</module>
     </modules>
 
     <artifactId>ruoyi-modules</artifactId>

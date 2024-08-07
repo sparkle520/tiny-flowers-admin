@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.dromara.article.mapper.ArticleSortMapper">
+
+    <resultMap id="ArticleSortResult" autoMapping="true" type="org.dromara.article.domain.ArticleSort">
+        <id property="id" column="id"/>
+    </resultMap>
+
+
+    <sql id="selectArticleSortVo">
+        select `as`.id, `as`.sort_name, `as`.parent_id from article_sort `as`
+    </sql>
+    <select id="queryList" parameterType="org.dromara.article.domain.query.ArticleSortQuery" resultMap="ArticleSortResult">
+        <include refid="selectArticleSortVo"/>
+        <where>
+            <if test="sortName != null and sortName != ''"> and `as`.sort_name like concat(concat('%', #{sortName}), '%')</if>
+            <if test="parentId != null"> and `as`.parent_id = #{parentId}</if>
+        </where>
+    </select>
+
+</mapper>

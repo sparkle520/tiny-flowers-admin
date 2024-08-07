@@ -119,7 +119,7 @@ export interface FileUploadProps {
 const props = withDefaults(defineProps<FileUploadProps>(), {
   limit: 5,
   fileSize: 5,
-  fileType: () => ['doc', 'docx', 'xlsx', 'xls', 'csv', 'ppt', 'pptx', 'txt', 'pdf'],
+  fileType: () => ['doc', 'docx', 'xlsx', 'xls', 'csv', 'ppt', 'pptx', 'txt', 'pdf','md'],
   isShowTip: true,
   theme: 'file',
   mode: 'url',
