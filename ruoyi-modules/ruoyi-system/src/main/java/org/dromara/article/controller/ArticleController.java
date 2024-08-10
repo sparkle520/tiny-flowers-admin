@@ -52,13 +52,35 @@ public class ArticleController extends BaseController {
         return articleService.queryPageList(query);
     }
     /**
-     * 查询文章列表
+     * @Author sparkle520
+     * @Description 根据标签id查询
+     * @Param
+     * @return
+     **/
+    @GetMapping("/tag/{tagId}/{pageNum}/{pageSize}")
+    @SaIgnore
+    public TableDataInfo<ArticleVo> listByTagId(@PathVariable Long tagId, @PathVariable Integer pageNum, @PathVariable Integer pageSize) {
+        return articleService.queryPageListByTagId(tagId,pageNum,pageSize);
+    }
+    /**
+     * @Author sparkle520
+     * @Description 根据分类id查询
+     * @Param
+     * @return
+     **/
+    @GetMapping("/sort/{sortId}/{pageNum}/{pageSize}")
+    @SaIgnore
+    public TableDataInfo<ArticleVo> listBySortId(@PathVariable Long sortId, @PathVariable Integer pageNum, @PathVariable Integer pageSize) {
+        return articleService.queryPageListBySortId(sortId,pageNum,pageSize);
+    }
+    /**
+     * 查询文章列表 标题或者简介
      */
 //    @SaCheckPermission("system:article:list")
-    @GetMapping("/search")
+    @GetMapping("/search/{search}/{pageNum}/{pageSize}")
     @SaIgnore
-    public TableDataInfo<ArticleVo> list( String query) {
-        return articleService.queryPageListByString(query);
+    public TableDataInfo<ArticleVo> listBySearch(@PathVariable String search, @PathVariable Integer pageNum, @PathVariable Integer pageSize) {
+        return articleService.queryPageListBySearchString(search,pageNum,pageSize);
     }
     /**
      * 获取最新文章列表
@@ -76,6 +98,7 @@ public class ArticleController extends BaseController {
     public R<Integer> list() {
         return R.ok(articleService.getArticleCount());
     }
+
     /**
      * 获取最后更新时间
      */

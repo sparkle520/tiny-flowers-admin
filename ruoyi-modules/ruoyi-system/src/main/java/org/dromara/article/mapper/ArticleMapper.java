@@ -37,4 +37,5 @@ public interface ArticleMapper extends BaseMapperPlus<Article, ArticleVo> {
     ArticleShort queryArticlePre(@Param("id") Long id);
     ArticleVo queryArticleCur(@Param("id") Long id);
     ArticleShort queryArticleNext(@Param("id") Long id);
+    List<ArticleVo> queryListByTagId(Long tagId);
 }

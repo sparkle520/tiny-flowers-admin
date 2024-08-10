@@ -182,8 +182,9 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     }
 
     @Override
-    public TableDataInfo<ArticleVo> queryPageListByString(String query) {
-        TableDataInfo<ArticleVo> info = PageQuery.of(() -> baseMapper.queryPageListByString(query));
+    public TableDataInfo<ArticleVo> queryPageListBySearchString(String query,Integer pageNum,Integer pageSize) {
+        PageQuery pageQuery = PageQuery.of(pageNum,pageSize);
+        TableDataInfo<ArticleVo> info = pageQuery.execute(() -> baseMapper.queryPageListByString(query));
         info.getRows().forEach(articleVo ->
         {
             articleVo.setTags(tagMapper.selectTagListByArticleId(articleVo.getId()));
@@ -194,8 +195,6 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     @Override
     public TableDataInfo<ArticleVo> getNewArticleList() {
         PageQuery pageQuery = PageQuery.of(1,4);
-        pageQuery.setPageNum(1);
-        pageQuery.setPageSize(4);
         TableDataInfo<ArticleVo> info = pageQuery.execute(()-> baseMapper.queryList(null));
         info.getRows().forEach(articleVo ->
         {
@@ -213,6 +212,30 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     public String getArticleLastUpdate() {
         SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         return formatter.format(baseMapper.queryList(null).get(0).getCreateTime());
+    }
+
+    @Override
+    public TableDataInfo<ArticleVo> queryPageListByTagId(Long tagId,Integer pageNum,Integer pageSize) {
+        PageQuery pageQuery = PageQuery.of(pageNum,pageSize);
+        TableDataInfo<ArticleVo> info = pageQuery.execute(() -> baseMapper.queryListByTagId(tagId));
+        info.getRows().forEach(articleVo ->
+        {
+            articleVo.setTags(tagMapper.selectTagListByArticleId(articleVo.getId()));
+        });
+        return info;
+    }
+
+    @Override
+    public TableDataInfo<ArticleVo> queryPageListBySortId(Long sortId,Integer pageNum,Integer pageSize) {
+        ArticleQuery articleQuery = new ArticleQuery();
+        PageQuery pageQuery = PageQuery.of(pageNum,pageSize);
+        articleQuery.setSortId(sortId);
+        TableDataInfo<ArticleVo> info = pageQuery.execute(() -> baseMapper.queryList(articleQuery));
+        info.getRows().forEach(articleVo ->
+        {
+            articleVo.setTags(tagMapper.selectTagListByArticleId(articleVo.getId()));
+        });
+        return info;
     }
 
 

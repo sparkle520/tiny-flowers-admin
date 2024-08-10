@@ -78,7 +78,6 @@
                  LEFT JOIN sys_user u ON a.author = u.user_id
                  LEFT JOIN article_sort s ON a.sort_id = s.id
         where a.id = #{id};
-
     </select>
     <select id="queryArticleNext" resultType="org.dromara.article.domain.vo.ArticleShort" parameterType="Long">
         select a.id, a.title,a.img from article a
@@ -111,6 +110,31 @@
                  LEFT JOIN article_sort s ON a.sort_id = s.id
         where a.title like concat('%',#{query},'%') or a.intro like concat('%',#{query},'%')
         order by a.id desc
+    </select>
+    <select id="queryListByTagId" resultType="org.dromara.article.domain.vo.ArticleVo">
+        select s.sort_name,
+               u.nick_name AS author_name,
+               a.id,
+               a.title,
+               a.intro,
+               a.img,
+               a.content,
+               a.author,
+               a.status,
+               a.view_scope_type,
+               a.view_count,
+               a.collect_count,
+               a.thumbs_up_count,
+               a.comment_count,
+               a.sort_id,
+               a.create_time,
+               a.create_by,
+               a.update_time,
+               a.update_by
+        from article a
+                 LEFT JOIN sys_user u ON a.author = u.user_id
+                 LEFT JOIN article_sort s ON a.sort_id = s.id
+        where a.id in (select article_id from tag_article where tag_id = #{tagId})
     </select>
 
 

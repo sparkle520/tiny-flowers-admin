@@ -85,5 +85,5 @@ public class ArticleQuery extends BasePageQuery {
     /**
      * 分类id
      */
-    private Integer sortId;
+    private Long sortId;
 }

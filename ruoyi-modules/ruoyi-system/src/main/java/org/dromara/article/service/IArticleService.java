@@ -69,11 +69,15 @@ public interface IArticleService extends IService<Article> {
 
     ArticlesVo queryArticlesById(Long id);
 
-    TableDataInfo<ArticleVo> queryPageListByString(String query);
+    TableDataInfo<ArticleVo> queryPageListBySearchString(String query,Integer pageNum,Integer pageSize);
 
     TableDataInfo<ArticleVo> getNewArticleList();
 
     Integer getArticleCount();
 
     String getArticleLastUpdate();
+
+    TableDataInfo<ArticleVo> queryPageListByTagId(Long tagId,Integer pageNum,Integer pageSize);
+
+    TableDataInfo<ArticleVo> queryPageListBySortId(Long sortId,Integer pageNum,Integer pageSize);
 }
